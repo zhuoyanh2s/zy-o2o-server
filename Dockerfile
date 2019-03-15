@@ -1,6 +1,7 @@
 FROM golang:1.12
-ADD . $GOPATH/opt/zy-o2o-service
-WORKDIR $GOPATH/opt/zy-o2o-service
+ADD . /opt/zy-o2o-service
+WORKDIR /opt/zy-o2o-service
+VOLUME ["/config","/config"]
 RUN go build .
 
 
