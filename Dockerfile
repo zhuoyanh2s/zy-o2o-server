@@ -1,4 +1,4 @@
-FROM golang
+FROM golang:1.12
 ADD . $GOPATH/opt/zy-o2o-service
 WORKDIR $GOPATH/opt/zy-o2o-service
 RUN go build .

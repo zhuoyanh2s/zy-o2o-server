@@ -1,0 +1,11 @@
+[app]
+JwtSecret = 233
+
+[server]
+RunMode = debug
+HttpPort = 8000
+ReadTimeout = 60
+WriteTimeout = 60
+
+[database]
+conn="postgres://ceshi:ceshi@39.96.30.230:5432/zy-o2o-server?sslmode=disable"
