@@ -1,15 +1,15 @@
 package utils
 
 import (
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/logs"
+	"errors"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/spf13/viper"
 	"time"
 )
 
 var (
-	secretKey    []byte = []byte(beego.AppConfig.String("secretkey"))
-	expTime, err        = beego.AppConfig.Int64("exptime")
+	secretKey []byte = []byte(viper.GetString("secretkey"))
+	expTime   int64  = viper.GetInt64("secretkey")
 )
 
 type Claims struct {
@@ -17,60 +17,73 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func ObtainJWT(username string) string {
+func ObtainJWT(username string) (string, error) {
+
 	claims := Claims{
 		username,
 		jwt.StandardClaims{
-			NotBefore: int64(time.Now().Unix()),
-			ExpiresAt: int64(time.Now().Unix() + expTime),
+			ExpiresAt: time.Now().Add(time.Duration(expTime) * time.Minute).Unix(),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	ss, err := token.SignedString(secretKey)
 	if err != nil {
-		logs.Error(err)
-		return ""
+		//beego.Error(err)
+		return "", errors.New("token 生成失败")
 	}
-	return ss
+	return ss, nil
 }
-func RefreshJWT(strToken string) string {
+func RefreshJWT(strToken string) (string, error) {
 	token, err := jwt.ParseWithClaims(strToken, &Claims{}, func(*jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
 	if err != nil {
-		println(err)
-		return ""
+		//beego.Error(err)
+		return "", err
 	}
 	claims, ok := token.Claims.(*Claims)
 	if !ok {
 		println("trst")
-		return ""
+		return "", err
 	}
 	if err := token.Claims.Valid(); err != nil {
-		print("test")
-		return ""
+		//beego.Error(err)
+		return "", err
 	}
-	//user, err := models.GetUser(claims.Username)
-	//if err != nil {
-	//	println(err)
-	//	return "user not exist"
-	//}
-	newToken := ObtainJWT(claims.Username)
-	return newToken
+
+	newToken, err := ObtainJWT(claims.Username)
+	return newToken, err
 }
-func VerifyJWT(strToken string) string {
+func VerifyJWT(strToken string) (bool, error) {
 	token, err := jwt.ParseWithClaims(strToken, &Claims{}, func(*jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
 	if err != nil {
-		logs.Error(err)
-		return ""
+		//beego.Error(err)
+		return false, err
 	}
 	if err := token.Claims.Valid(); err != nil {
-		print("test")
-		return ""
+		//beego.Error(err)
+		return false, err
 	}
-	return "ok"
+	return true, nil
 
+}
+
+// jwt中间件
+var jwtSecret = []byte(viper.GetString("app.JwtSecret"))
+
+func ParseToken(token string) (*Claims, error) {
+	tokenClaims, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+
+	if tokenClaims != nil {
+		if claims, ok := tokenClaims.Claims.(*Claims); ok && tokenClaims.Valid {
+			return claims, nil
+		}
+	}
+
+	return nil, err
 }

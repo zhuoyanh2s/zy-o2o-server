@@ -1,7 +1,8 @@
 FROM golang
-ADD . /opt/zy-o2o-server
-WORKDIR /opt/zy-o2o-server
-RUN go install 
+ADD . $GOPATH/opt/zy-o2o-service
+WORKDIR $GOPATH/opt/zy-o2o-service
+RUN go build .
 
-ENTRYPOINT /opt/zy-o2o-server
-EXPOSE 8001
+
+ENTRYPOINT ["./zy-o2o-service"]
+EXPOSE 8080
